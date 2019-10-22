@@ -1,6 +1,8 @@
 const express=require('express')
 const passport=require('passport')
 const GoogleStategy=require('passport-google-oauth20').Strategy
+const FacebookStategy=require('passport-facebook').Strategy
+
 const keys=require('./config/key')
 const app=express();
 const PORT=process.env.PORT || 5000
@@ -58,7 +60,30 @@ User.findOne({googleId:profile.id}).then((existinguser)=>{
 })
  }))
 
-app.get('/auth/google',passport.authenticate('google',{scope:['profile','email']}))
+ passport.use(
+ new FacebookStategy({
+ clientID:keys.fbClientID,
+ clientSecret:keys.fbClientSecret,
+   callbackURL:'/auth/facebook/callback'
+ },(token, tokenSecret, profile, done)=>{
+   console.log(profile);
+ User.findOne({googleId:profile.id}).then((existinguser)=>{
+   if(existinguser){
+     done(null,existinguser)
+   }else{
+     new User({
+       googleId:profile.id,
+        username:profile.displayName
+      // picture:profile._json.picture
+     }).save().then((user)=>{
+       done(null,user)
+     })
+   }
+ })
+  }))
+
+app.get('/auth/google',passport.authenticate('google',{scope:['profile','email']}));
+app.get('/auth/facebook', passport.authenticate('facebook'));
 
 app.get("/",(req,res)=>{
   res.send("Hello");
@@ -67,7 +92,9 @@ app.get("/",(req,res)=>{
 app.get('/auth/google/callback',passport.authenticate('google'),(req,res)=>{
   res.redirect('/profile');
 })
-
+app.get('/auth/facebook/callback',passport.authenticate('facebook'),(req,res)=>{
+res.redirect('/profile');
+})
 app.get('/api/current_user',(req,res)=>{
 res.send(req.user)
 })
@@ -76,7 +103,6 @@ req.logout();
 //res.send(req.user);
 res.redirect('/');
 })
-
 app.listen(PORT,()=>{
   console.log("Server started on "+PORT);
 })

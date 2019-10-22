@@ -1,4 +1,6 @@
 module.exports={
  googleClientID:"",
- googleClientSecret:""
+ googleClientSecret:"",
+ fbClientID:"",
+ fbClientSecret:""
 }
